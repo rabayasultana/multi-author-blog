@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="container">
+
+    <h1 class="page-title">Latest Blog Posts</h1>
+
+    <form method="GET" class="filter-form">
+
+        <input
+            type="text"
+            name="search"
+            value="{{ search }}"
+            placeholder="Search posts..."
+        >
+
+        <select name="category">
+            <option value="">All Categories</option>
+
+            {% for category in categories %}
+                <option
+                    value="{{ category.id }}"
+                    {% if request.GET.category == category.id|stringformat:"s" %}selected{% endif %}
+                >
+                    {{ category.category_name }}
+                </option>
+            {% endfor %}
+        </select>
+
+        <select name="tag">
+            <option value="">All Tags</option>
+
+            {% for tag in tags %}
+                <option
+                    value="{{ tag.id }}"
+                    {% if request.GET.tag == tag.id|stringformat:"s" %}selected{% endif %}
+                >
+                    {{ tag.tag_name }}
+                </option>
+            {% endfor %}
+        </select>
+
+        <button type="submit">
+            Filter
+        </button>
+
+    </form>
+
+    <div class="posts-container">
+
+        {% for post in page_obj %}
+
+        <div class="post-card">
+
+            {% if post.featured_image %}
+                <img src="{{ post.featured_image.url }}" alt="{{ post.title }}">
+            {% endif %}
+
+            <div class="post-content">
+
+                <h2>
+                    <a href="{% url 'post_detail' post.slug %}">
+                        {{ post.title }}
+                    </a>
+                </h2>
+
+                <p class="meta">
+                    <strong>Author:</strong> {{ post.author }}
+                </p>
+
+                <p class="meta">
+                    <strong>Category:</strong> {{ post.category }}
+                </p>
+
+                <p>
+                    {{ post.content|truncatewords:25 }}
+                </p>
+
+                <a class="read-more" href="{% url 'post_detail' post.slug %}">
+                    Read More →
+                </a>
+
+            </div>
+
+        </div>
+
+        {% empty %}
+
+        <h3>No posts found.</h3>
+
+        {% endfor %}
+
+    </div>
+
+    {% if page_obj.paginator.num_pages > 1 %}
+
+    <div class="pagination">
+
+        {% if page_obj.has_previous %}
+            <a href="?page=1">&laquo; First</a>
+
+            <a href="?page={{ page_obj.previous_page_number }}">
+                Previous
+            </a>
+        {% endif %}
+
+        {% for page in page_obj.paginator.page_range %}
+
+            {% if page == page_obj.number %}
+
+                <span class="active">{{ page }}</span>
+
+            {% elif page >= page_obj.number|add:-2 and page <= page_obj.number|add:2 %}
+
+                <a href="?page={{ page }}">{{ page }}</a>
+
+            {% endif %}
+
+        {% endfor %}
+
+        {% if page_obj.has_next %}
+
+            <a href="?page={{ page_obj.next_page_number }}">
+                Next
+            </a>
+
+            <a href="?page={{ page_obj.paginator.num_pages }}">
+                Last &raquo;
+            </a>
+
+        {% endif %}
+
+    </div>
+
+    {% endif %}
+
+</div>
+
+{% endblock %}

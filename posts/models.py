@@ -1,14 +1,8 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils.text import slugify
+from common import TimeStampMixin
 
-# Create your models here.
-class TimeStampMixin(models.Model):
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    
-    class Meta:
-        abstract = True
 class Category(TimeStampMixin):
     category_name = models.CharField(max_length=100, unique=True)
 
@@ -102,12 +96,6 @@ class Comment(TimeStampMixin):
         on_delete=models.CASCADE,
         related_name="comments"
     )
-
-    # user = models.ForeignKey(
-    #     User,
-    #     on_delete=models.CASCADE,
-    #     related_name="comments"
-    # )
     
     author = models.ForeignKey(
         User,
@@ -130,4 +118,4 @@ class Comment(TimeStampMixin):
         ordering = ["created_at"]
 
     def __str__(self):
-        return f"{self.author.first_name} on {self.post.title}"
+        return f"{self.author.username if self.author else 'Anonymous'} on {self.post.title}"

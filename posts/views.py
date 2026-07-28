@@ -1,8 +1,11 @@
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render, get_object_or_404, redirect
 from django.core.paginator import Paginator
 from django.db.models import Q, F
-
 from .models import Post, Category, Tag
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from .forms import PostForm, CategoryForm, TagForm
+
 
 
 # def home(request):
@@ -83,7 +86,7 @@ def post_list_view(request):
         "search": search,
     }
 
-    return render(request, "post_list.html", context)
+    return render(request, "posts/post_list.html", context)
 
 
 def post_detail(request, slug):
@@ -116,6 +119,98 @@ def post_detail(request, slug):
 
     return render(
         request,
-        "post_detail.html",
+        "posts/post_detail.html",
         context,
+    )
+    
+@login_required
+def create_post(request):
+    if not request.user.profile.is_author:
+        messages.error(
+            request,
+            "You are not allowed to create blog posts."
+        )
+        return redirect("post_list")
+
+    if request.method == "POST":
+        form = PostForm(
+            request.POST,
+            request.FILES
+        )
+
+        if form.is_valid():
+            post = form.save(commit=False)
+            post.author = request.user
+            post.save()
+
+            form.save_m2m()
+
+            messages.success(
+                request,
+                "Post created successfully."
+            )
+
+            return redirect("post_detail", slug=post.slug)
+
+    else:
+        form = PostForm()
+
+    return render(
+        request,
+        "posts/create_post.html",
+        {
+            "form": form
+        },
+    )
+    
+    
+@login_required
+def create_category(request):
+    if not request.user.is_superuser:
+        messages.error(request, "Only admin can create categories.")
+        return redirect("post_list")
+
+    if request.method == "POST":
+        form = CategoryForm(request.POST)
+
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Category created successfully.")
+            return redirect("post_list")
+
+    else:
+        form = CategoryForm()
+
+    return render(
+        request,
+        "posts/create_category.html",
+        {
+            "form": form
+        }
+    )
+
+
+@login_required
+def create_tag(request):
+    if not request.user.is_superuser:
+        messages.error(request, "Only admin can create tags.")
+        return redirect("post_list")
+
+    if request.method == "POST":
+        form = TagForm(request.POST)
+
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Tag created successfully.")
+            return redirect("post_list")
+
+    else:
+        form = TagForm()
+
+    return render(
+        request,
+        "posts/create_tag.html",
+        {
+            "form": form
+        }
     )
