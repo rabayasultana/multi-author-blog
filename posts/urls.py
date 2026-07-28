@@ -25,6 +25,22 @@ urlpatterns = [
         views.create_tag,
         name="create_tag",
     ),
+    path(
+        "dashboard/",
+        views.author_dashboard,
+        name="dashboard",
+    ),
+    path(
+    "edit/<int:pk>/",
+    views.edit_post,
+    name="edit_post",
+    ),
+
+    path(
+        "delete/<int:pk>/",
+        views.delete_post,
+        name="delete_post",
+    ),
 ]
 
 if settings.DEBUG:

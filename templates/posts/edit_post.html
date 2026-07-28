@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}
+Edit Post
+{% endblock %}
+
+{% block content %}
+
+<div class="container">
+
+    <div class="form-container">
+
+        <h2>Edit Post</h2>
+
+        <form method="POST" enctype="multipart/form-data">
+
+            {% csrf_token %}
+
+            {{ form.as_p }}
+
+            {% if form.instance.featured_image %}
+                <div class="mb-3">
+                    <p><strong>Current Image:</strong></p>
+
+                    <img
+                        src="{{ form.instance.featured_image.url }}"
+                        alt="{{ form.instance.title }}"
+                        width="250"
+                    >
+                </div>
+            {% endif %}
+
+            <button type="submit" class="btn btn-primary">
+                Update Post
+            </button>
+
+            <a href="{% url 'dashboard' %}" class="btn btn-secondary">
+                Cancel
+            </a>
+
+        </form>
+
+    </div>
+
+</div>
+
+{% endblock %}

@@ -5,6 +5,7 @@ from .models import Post, Category, Tag
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from .forms import PostForm, CategoryForm, TagForm
+from django.http import Http404
 
 
 
@@ -88,7 +89,6 @@ def post_list_view(request):
 
     return render(request, "posts/post_list.html", context)
 
-
 def post_detail(request, slug):
     post = get_object_or_404(
         Post.objects.select_related(
@@ -99,8 +99,18 @@ def post_detail(request, slug):
             "comments"
         ),
         slug=slug,
-        status=Post.Status.PUBLISHED,
     )
+
+    # Only the author or admin can view draft posts
+    if post.status == Post.Status.DRAFT:
+        if (
+            not request.user.is_authenticated
+            or (
+                request.user != post.author
+                and not request.user.is_superuser
+            )
+        ):
+            raise Http404("Post not found")
 
     session_key = f"viewed_post_{post.id}"
 
@@ -113,14 +123,12 @@ def post_detail(request, slug):
 
         post.refresh_from_db(fields=["view_count"])
 
-    context = {
-        "post": post
-    }
-
     return render(
         request,
         "posts/post_detail.html",
-        context,
+        {
+            "post": post
+        },
     )
     
 @login_required
@@ -213,4 +221,77 @@ def create_tag(request):
         {
             "form": form
         }
+    )
+    
+@login_required
+def author_dashboard(request):
+    if not request.user.profile.is_author:
+        return redirect("post_list")
+
+    posts = (
+        request.user.posts
+        .select_related("category")
+        .prefetch_related("tags")
+        .order_by("-created_at")
+    )
+
+    context = {
+        "posts": posts,
+    }
+
+    return render(
+        request,
+        "posts/dashboard.html",
+        context,
+    )
+    
+from django.shortcuts import get_object_or_404
+
+
+@login_required
+def edit_post(request, pk):
+    post = get_object_or_404(Post, pk=pk)
+
+    if post.author != request.user:
+        return redirect("dashboard")
+
+    if request.method == "POST":
+        form = PostForm(
+            request.POST,
+            request.FILES,
+            instance=post,
+        )
+
+        if form.is_valid():
+            form.save()
+            return redirect("dashboard")
+
+    else:
+        form = PostForm(instance=post)
+
+    return render(
+        request,
+        "posts/edit_post.html",
+        {
+            "form": form,
+        },
+    )
+    
+@login_required
+def delete_post(request, pk):
+    post = get_object_or_404(Post, pk=pk)
+
+    if post.author != request.user:
+        return redirect("dashboard")
+
+    if request.method == "POST":
+        post.delete()
+        return redirect("dashboard")
+
+    return render(
+        request,
+        "posts/delete_post.html",
+        {
+            "post": post,
+        },
     )
