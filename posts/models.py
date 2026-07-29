@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.utils.text import slugify
 from common import TimeStampMixin
+from django.conf import settings
 
 class Category(TimeStampMixin):
     category_name = models.CharField(max_length=100, unique=True)
@@ -119,3 +120,27 @@ class Comment(TimeStampMixin):
 
     def __str__(self):
         return f"{self.author.username if self.author else 'Anonymous'} on {self.post.title}"
+    
+class Like(TimeStampMixin):
+    post = models.ForeignKey(
+        Post,
+        on_delete=models.CASCADE,
+        related_name="likes"
+    )
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="likes"
+    )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["post", "user"],
+                name="unique_post_like"
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.user} likes {self.post}"

@@ -41,6 +41,21 @@ urlpatterns = [
         views.delete_post,
         name="delete_post",
     ),
+    path(
+        "post/<slug:slug>/comment/",
+        views.add_comment,
+        name="add_comment",
+    ),
+    path(
+        "comment/<int:pk>/delete/",
+        views.delete_comment,
+        name="delete_comment",
+    ),
+    path(
+        "post/<slug:slug>/like/",
+        views.toggle_like,
+        name="toggle_like",
+    ),
 ]
 
 if settings.DEBUG:

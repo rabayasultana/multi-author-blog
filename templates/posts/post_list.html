@@ -11,7 +11,7 @@
         <input
             type="text"
             name="search"
-            value="{{ search }}"
+            value="{{ search|default:'' }}"
             placeholder="Search posts..."
         >
 
@@ -66,7 +66,10 @@
                 </h2>
 
                 <p class="meta">
-                    <strong>Author:</strong> {{ post.author }}
+                    <strong>Author:</strong>
+                    <a href="{% url 'author_profile' post.author.username %}">
+                    {{ post.author.get_full_name|default:post.author.username }}
+                    </a>
                 </p>
 
                 <p class="meta">

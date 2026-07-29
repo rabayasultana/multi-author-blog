@@ -1,5 +1,5 @@
 from django import forms
-from .models import Post, Category, Tag
+from .models import Post, Category, Tag, Comment
 
 
 class PostForm(forms.ModelForm):
@@ -28,3 +28,17 @@ class TagForm(forms.ModelForm):
     class Meta:
         model = Tag
         fields = ["tag_name"]
+
+class CommentForm(forms.ModelForm):
+    class Meta:
+        model = Comment
+        fields = ["comment"]
+
+        widgets = {
+            "comment": forms.Textarea(
+                attrs={
+                    "rows": 4,
+                    "placeholder": "Write your comment..."
+                }
+            )
+        }

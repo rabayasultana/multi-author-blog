@@ -1,8 +1,13 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from .forms import UserRegistrationForm
 from django.contrib.auth import login
 from django.contrib.auth.forms import AuthenticationForm
+from django.contrib.auth import get_user_model
+
+from posts.models import Post
+
+User = get_user_model()
 
 def register(request):
     if request.method == "POST":
@@ -53,4 +58,31 @@ def login_view(request):
         {
             "form": form
         }
+    )
+    
+def author_profile(request, username):
+    author = get_object_or_404(
+        User.objects.select_related("profile"),
+        username=username,
+    )
+
+    posts = (
+        Post.objects.filter(
+            author=author,
+            status=Post.Status.PUBLISHED,
+        )
+        .select_related("category")
+        .prefetch_related("tags")
+        .order_by("-created_at")
+    )
+
+    context = {
+        "author": author,
+        "posts": posts,
+    }
+
+    return render(
+        request,
+        "accounts/author_profile.html",
+        context,
     )

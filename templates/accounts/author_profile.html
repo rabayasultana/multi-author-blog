@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="container">
+
+    <h1>{{ author.get_full_name|default:author.username }}</h1>
+
+    <p>
+        <strong>Username:</strong> {{ author.username }}
+    </p>
+
+    {% if author.profile.bio %}
+        <p>{{ author.profile.bio }}</p>
+    {% endif %}
+
+    <hr>
+
+    <h2>Published Posts</h2>
+
+    {% if posts %}
+
+        {% for post in posts %}
+
+        <div class="post-card">
+
+            {% if post.featured_image %}
+                <img
+                    src="{{ post.featured_image.url }}"
+                    width="250"
+                >
+            {% endif %}
+
+            <h3>
+                <a href="{% url 'post_detail' post.slug %}">
+                    {{ post.title }}
+                </a>
+            </h3>
+
+            <p>
+                {{ post.content|truncatewords:25 }}
+            </p>
+
+            <p>
+                Category: {{ post.category }}
+            </p>
+
+            <p>
+                Views: {{ post.view_count }}
+            </p>
+
+        </div>
+
+        <hr>
+
+        {% endfor %}
+
+    {% else %}
+
+        <p>
+            This author hasn't published any posts yet.
+        </p>
+
+    {% endif %}
+
+</div>
+
+{% endblock %}

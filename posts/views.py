@@ -1,10 +1,10 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.core.paginator import Paginator
 from django.db.models import Q, F
-from .models import Post, Category, Tag
+from .models import Post, Category, Tag, Comment, Like
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from .forms import PostForm, CategoryForm, TagForm
+from .forms import PostForm, CategoryForm, TagForm, CommentForm
 from django.http import Http404
 
 
@@ -89,28 +89,33 @@ def post_list_view(request):
 
     return render(request, "posts/post_list.html", context)
 
-def post_detail(request, slug):
-    post = get_object_or_404(
-        Post.objects.select_related(
-            "author",
-            "category"
-        ).prefetch_related(
-            "tags",
-            "comments"
-        ),
-        slug=slug,
-    )
+# def post_detail(request, slug):
+#     post = get_object_or_404(
+#         Post.objects.select_related(
+#             "author",
+#             "category"
+#         ).prefetch_related(
+#             "tags",
+#             "comments"
+#         ),
+#         slug=slug,
+#     )
 
-    # Only the author or admin can view draft posts
-    if post.status == Post.Status.DRAFT:
-        if (
+def post_detail(request, slug):
+
+    post = get_object_or_404(Post, slug=slug)
+
+    if (
+        post.status == Post.Status.DRAFT
+        and (
             not request.user.is_authenticated
             or (
                 request.user != post.author
                 and not request.user.is_superuser
             )
-        ):
-            raise Http404("Post not found")
+        )
+    ):
+        raise Http404()
 
     session_key = f"viewed_post_{post.id}"
 
@@ -120,16 +125,62 @@ def post_detail(request, slug):
         )
 
         request.session[session_key] = True
+        post.refresh_from_db()
 
-        post.refresh_from_db(fields=["view_count"])
+    comments = post.comments.select_related(
+        "author"
+    ).order_by("created_at")
+    
+    user_has_liked = False
+
+    if request.user.is_authenticated:
+        user_has_liked = Like.objects.filter(
+            post=post,
+            user=request.user
+        ).exists()
+
+    context = {
+    "post": post,
+    "comments": comments,
+    "comment_form": CommentForm(),
+    "user_has_liked": user_has_liked,
+}
 
     return render(
         request,
         "posts/post_detail.html",
-        {
-            "post": post
-        },
+        context
     )
+
+    # # Only the author or admin can view draft posts
+    # if post.status == Post.Status.DRAFT:
+    #     if (
+    #         not request.user.is_authenticated
+    #         or (
+    #             request.user != post.author
+    #             and not request.user.is_superuser
+    #         )
+    #     ):
+    #         raise Http404("Post not found")
+
+    # session_key = f"viewed_post_{post.id}"
+
+    # if not request.session.get(session_key):
+    #     Post.objects.filter(pk=post.pk).update(
+    #         view_count=F("view_count") + 1
+    #     )
+
+    #     request.session[session_key] = True
+
+    #     post.refresh_from_db(fields=["view_count"])
+
+    # return render(
+    #     request,
+    #     "posts/post_detail.html",
+    #     {
+    #         "post": post
+    #     },
+    # )
     
 @login_required
 def create_post(request):
@@ -294,4 +345,66 @@ def delete_post(request, pk):
         {
             "post": post,
         },
+    )
+    
+    
+@login_required
+def add_comment(request, slug):
+
+    post = get_object_or_404(Post, slug=slug)
+
+    if request.method == "POST":
+
+        form = CommentForm(request.POST)
+
+        if form.is_valid():
+
+            comment = form.save(commit=False)
+
+            comment.post = post
+            comment.author = request.user
+
+            comment.save()
+
+    return redirect("post_detail", slug=slug)
+
+
+@login_required
+def delete_comment(request, pk):
+
+    comment = get_object_or_404(Comment, pk=pk)
+
+    if (
+        request.user == comment.author
+        or request.user == comment.post.author
+        or request.user.is_superuser
+    ):
+
+        slug = comment.post.slug
+
+        comment.delete()
+
+        return redirect(
+            "post_detail",
+            slug=slug
+        )
+
+    return redirect("post_detail", slug=comment.post.slug)
+
+@login_required
+def toggle_like(request, slug):
+
+    post = get_object_or_404(Post, slug=slug)
+
+    like, created = Like.objects.get_or_create(
+        post=post,
+        user=request.user
+    )
+
+    if not created:
+        like.delete()
+
+    return redirect(
+        "post_detail",
+        slug=slug
     )
