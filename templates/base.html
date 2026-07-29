@@ -123,10 +123,49 @@
         {% endblock %}
 
     </div>
-
-
+    
+    
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.querySelectorAll(".like-form").forEach(form => {
 
-</body>
+            form.addEventListener("submit", function (e) {
 
-</html>
+                e.preventDefault();
+
+                fetch(form.action, {
+                    method: "POST",
+                    headers: {
+                        "X-CSRFToken": form.querySelector("[name=csrfmiddlewaretoken]").value,
+                    }
+                })
+                    .then(response => response.json())
+                    .then(data => {
+
+                        const button = form.querySelector("button");
+
+                        button.textContent = data.liked ? "Unlike" : "Like";
+
+                        form.previousElementSibling.textContent =
+                            `❤️ ${data.like_count}`;
+
+                    });
+
+            });
+
+        });
+        document.querySelectorAll(".clickable-card").forEach(card => {
+            card.addEventListener("click", function (e) {
+
+                // Don't navigate if a button, link, form, or input was clicked
+                if (e.target.closest("a, button, form, input, textarea")) {
+                    return;
+                }
+
+                window.location.href = this.dataset.url;
+            });
+        });
+    </script>
+    </body>
+    
+    </html>

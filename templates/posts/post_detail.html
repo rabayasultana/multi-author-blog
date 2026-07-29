@@ -2,180 +2,209 @@
 
 {% block content %}
 
-<h1>
+<div class="post-detail-container">
 
-{{ post.title }}
+    <article class="blog-post">
 
-</h1>
+        <h1 class="post-title">
+            {{ post.title }}
+        </h1>
 
-{% if post.featured_image %}
+        <div class="post-meta">
 
-<img
-src="{{ post.featured_image.url }}"
-width="400"
->
+            <span>
+                ✍️
+                <a href="{% url 'author_profile' post.author.username %}">
+                    {{ post.author.get_full_name|default:post.author.username }}
+                </a>
+            </span>
 
-{% endif %}
+            <span>📂 {{ post.category }}</span>
 
-<p>
+            <span>📅 {{ post.created_at|date:"F d, Y" }}</span>
 
-Author:
-  <a href="{% url 'author_profile' post.author.username %}">
-    {{ post.author.get_full_name|default:post.author.username }}
-  </a>
+            <span>👁️ {{ post.view_count }} Views</span>
 
-</p>
+        </div>
 
-<p>
+        {% if post.featured_image %}
 
-Category:
+        <img
+            class="featured-image"
+            src="{{ post.featured_image.url }}"
+            alt="{{ post.title }}"
+        >
 
-{{ post.category }}
+        {% endif %}
 
-</p>
+        <div class="post-body">
 
-<p>
+            {{ post.content|linebreaks }}
 
-Published:
+        </div>
 
-{{ post.created_at }}
+        <div class="tag-section">
 
-</p>
+            {% for tag in post.tags.all %}
 
-<p>
+                <span class="tag">
+                    #{{ tag.tag_name }}
+                </span>
 
-Views:
+            {% empty %}
 
-{{ post.view_count }}
+                <span>No tags</span>
 
-</p>
+            {% endfor %}
 
-<p>
+        </div>
 
-{{ post.content }}
+        <div class="like-comment-section">
 
-</p>
+            <div class="like-section">
+            <span class="like-count">
+                ❤️ {{ post.likes.count }}
+            </span>
 
-<hr>
+            {% if user.is_authenticated %}
 
-<h3>
+            <form
+                class="like-form"
+                method="post"
+                action="{% url 'toggle_like' post.slug %}"
+            >
+                {% csrf_token %}
 
-Tags
+                {% if user_has_liked %}
 
-</h3>
+                    <button class="btn btn-danger">
 
-{% for tag in post.tags.all %}
+                        Unlike
 
-{{ tag.tag_name }}
+                    </button>
 
-{% empty %}
+                {% else %}
 
-No tags
+                    <button class="btn btn-primary">
 
-{% endfor %}
+                        Like
 
-<hr>
+                    </button>
 
-<h3>❤️ Likes: {{ post.likes.count }}</h3>
+                {% endif %}
 
-{% if user.is_authenticated %}
-<form method="post" action="{% url 'toggle_like' post.slug %}">
-    {% csrf_token %}
+            </form>
 
-    {% if user_has_liked %}
-        <button class="btn btn-danger">
-            Unlike
-        </button>
-    {% else %}
-        <button class="btn btn-primary">
-            Like
-        </button>
-    {% endif %}
-</form>
-{% endif %}
+            {% endif %}
+            </div>
 
-<hr>
+            <h2>
 
-<h3>Comments</h3>
+                💬 Comments ({{ comments.count }})
 
-{% if user.is_authenticated %}
+            </h2>
 
-<form method="post"
-      action="{% url 'add_comment' post.slug %}">
+        </div>
 
-    {% csrf_token %}
+    </article>
 
-    {{ comment_form.as_p }}
 
-    <button class="btn btn-primary">
+    <section class="comments-section">
 
-        Comment
 
-    </button>
+        {% if user.is_authenticated %}
 
-</form>
+        <div class="comment-form">
 
-{% else %}
+            <form
+                method="post"
+                action="{% url 'add_comment' post.slug %}"
+            >
 
-<p>
+                {% csrf_token %}
 
-<a href="{% url 'login' %}">
+                {{ comment_form.as_p }}
 
-Login
+                <button class="btn btn-primary">
 
-</a>
+                    Post Comment
 
-to comment.
+                </button>
 
-</p>
+            </form>
 
-{% endif %}
+        </div>
 
-<hr>
+        {% else %}
 
-{% for comment in comments %}
+        <p>
 
-<div class="comment-box">
+            <a href="{% url 'login' %}">
 
-    <strong>
+                Login
 
-        {{ comment.author }}
+            </a>
 
-    </strong>
+            to join the discussion.
 
-    <small>
+        </p>
 
-        {{ comment.created_at }}
+        {% endif %}
 
-    </small>
 
-    <p>
+        {% for comment in comments %}
 
-        {{ comment.comment }}
+        <div class="comment-card">
 
-    </p>
+            <div class="comment-header">
 
-    {% if user == comment.author or user == post.author or user.is_superuser %}
+                <strong>
 
-        <a
-            href="{% url 'delete_comment' comment.pk %}">
-            Delete
-        </a>
+                    {{ comment.author }}
 
-    {% endif %}
+                </strong>
+
+                <span>
+
+                    {{ comment.created_at|date:"F d, Y H:i" }}
+
+                </span>
+
+            </div>
+
+            <p>
+
+                {{ comment.comment }}
+
+            </p>
+
+            {% if user == comment.author or user == post.author or user.is_superuser %}
+
+            <a
+                class="delete-link"
+                href="{% url 'delete_comment' comment.pk %}"
+            >
+
+                Delete
+
+            </a>
+
+            {% endif %}
+
+        </div>
+
+        {% empty %}
+
+        <div class="comment-card">
+
+            No comments yet. Be the first!
+
+        </div>
+
+        {% endfor %}
+
+    </section>
 
 </div>
-
-<hr>
-
-{% empty %}
-
-<p>
-
-No comments yet.
-
-</p>
-
-{% endfor %}
 
 {% endblock %}

@@ -5,7 +5,7 @@ from .models import Post, Category, Tag, Comment, Like
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from .forms import PostForm, CategoryForm, TagForm, CommentForm
-from django.http import Http404
+from django.http import Http404, JsonResponse
 
 
 
@@ -79,12 +79,20 @@ def post_list_view(request):
     page_number = request.GET.get("page")
 
     page_obj = paginator.get_page(page_number)
+    
+    liked_posts = set()
+
+    if request.user.is_authenticated:
+        liked_posts = set(
+            request.user.likes.values_list("post_id", flat=True)
+        )
 
     context = {
         "page_obj": page_obj,
         "categories": Category.objects.all(),
         "tags": Tag.objects.all(),
         "search": search,
+        "liked_posts": liked_posts,
     }
 
     return render(request, "posts/post_list.html", context)
@@ -391,20 +399,43 @@ def delete_comment(request, pk):
 
     return redirect("post_detail", slug=comment.post.slug)
 
+# @login_required
+# def toggle_like(request, slug):
+
+#     post = get_object_or_404(Post, slug=slug)
+
+#     like, created = Like.objects.get_or_create(
+#         post=post,
+#         user=request.user
+#     )
+
+#     if not created:
+#         like.delete()
+
+#     return redirect(
+#         "post_detail",
+#         slug=slug
+#     )
+
 @login_required
 def toggle_like(request, slug):
+    if request.method != "POST":
+        return JsonResponse({"error": "Invalid request"}, status=400)
 
     post = get_object_or_404(Post, slug=slug)
 
     like, created = Like.objects.get_or_create(
         post=post,
-        user=request.user
+        user=request.user,
     )
 
-    if not created:
+    if created:
+        liked = True
+    else:
         like.delete()
+        liked = False
 
-    return redirect(
-        "post_detail",
-        slug=slug
-    )
+    return JsonResponse({
+        "liked": liked,
+        "like_count": post.likes.count(),
+    })

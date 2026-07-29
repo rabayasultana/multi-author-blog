@@ -51,8 +51,10 @@
 
         {% for post in page_obj %}
 
-        <div class="post-card">
-
+        <div
+            class="post-card clickable-card"
+            data-url="{% url 'post_detail' post.slug %}"
+        >
             {% if post.featured_image %}
                 <img src="{{ post.featured_image.url }}" alt="{{ post.title }}">
             {% endif %}
@@ -75,15 +77,46 @@
                 <p class="meta">
                     <strong>Category:</strong> {{ post.category }}
                 </p>
-
+                
                 <p>
                     {{ post.content|truncatewords:25 }}
                 </p>
+                               
+                <div class="post-actions">
+                
+                    <span class="like-count">
+                        ❤️ {{ post.likes.count }}
+                    </span>
+                
+                    {% if user.is_authenticated %}
+                    <form
+                        class="like-form"
+                        data-slug="{{ post.slug }}"
+                        method="post"
+                        action="{% url 'toggle_like' post.slug %}"
+                    >
+                        {% csrf_token %}               
+                        {% if post.id in liked_posts %}
+                        <button class="btn btn-primary">
+                            Unlike
+                        </button>
+                        {% else %}
+                        <button class="btn btn-primary">
+                            Like
+                        </button>
+                        {% endif %}               
+                    </form>               
+                    {% endif %}
 
-                <a class="read-more" href="{% url 'post_detail' post.slug %}">
-                    Read More →
-                </a>
-
+                    <span>
+                        💬 {{ post.comments.count }}
+                    </span>
+                
+                    <a class="action-btn" href="{% url 'post_detail' post.slug %}">
+                        Comment
+                    </a>
+                
+                </div>
             </div>
 
         </div>
