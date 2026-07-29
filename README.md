@@ -176,11 +176,10 @@ http://127.0.0.1:8000/admin/
 
 The repository contains a PostgreSQL database backup file.
 
-Example:
 
 
 ```
-blog_db.dump
+database/blog_db.dump
 ```
 
 ---
