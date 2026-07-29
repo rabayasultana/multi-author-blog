@@ -182,24 +182,6 @@ The repository contains a PostgreSQL database backup file.
 database/blog_db.dump
 ```
 
----
-
-## Restore SQL Backup
-
-Create a new database first.
-
-```bash
-createdb blog_db
-```
-
-Restore:
-
-```bash
-psql blog_db < database_backup.sql
-```
-
----
-
 ## Restore Custom Dump (.dump)
 
 ```bash
